@@ -1,0 +1,17 @@
+cat > .gitignore << 'EOF'
+
+__pycache__/
+*.py[cod]
+
+*.pkl
+*.npz
+*.npy
+
+
+*.log
+*.tmp
+
+
+.ipynb_checkpoints/
+
+EOF

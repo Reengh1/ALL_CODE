@@ -1,0 +1,121 @@
+pipeline_config_id: runner_config
+
+data:
+  hawkes:
+    data_format: pkl
+    train_dir:   /data/guangchen_li/datasets/scaled_hawkes/train.pkl
+    valid_dir:   /data/guangchen_li/datasets/scaled_hawkes/dev.pkl
+    test_dir:    /data/guangchen_li/datasets/scaled_hawkes/test.pkl
+    data_specs:
+      num_event_types: 5
+      pad_token_id: 5
+      padding_side: right
+      truncation_side: right
+  test_hawkes:
+    data_format: pkl
+    train_dir:   /home/guangchen_li/dev/DCL_TPP/data_hawkes/train.pkl
+    valid_dir:   /home/guangchen_li/dev/DCL_TPP/data_hawkes/dev.pkl
+    test_dir:    /home/guangchen_li/dev/DCL_TPP/data_hawkes/test.pkl
+    data_specs:
+      num_event_types: 5
+      pad_token_id: 5
+      padding_side: right
+      truncation_side: right  
+  amazon:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/amazon/train.pkl
+    valid_dir: /data/guangchen_li/datasets/amazon/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/amazon/test.pkl
+    data_specs:
+      num_event_types: 16
+      pad_token_id: 16
+      padding_side: right
+      truncation_side: right  
+  taobao_v3:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/taobao/taobao_v3/train.pkl
+    valid_dir: /data/guangchen_li/datasets/taobao/taobao_v3/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/taobao/taobao_v3/test.pkl
+    data_specs:
+      num_event_types: 20
+      pad_token_id: 20
+      padding_side: right
+      truncation_side: right  
+  taobao_v5:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/taobao/tb_v5/train.pkl
+    valid_dir: /data/guangchen_li/datasets/taobao/tb_v5/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/taobao/tb_v5/test.pkl
+    data_specs:
+      num_event_types: 20
+      pad_token_id: 20
+      padding_side: right
+      truncation_side: right  
+  taobao_v8:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/taobao/tb_v8/train.pkl
+    valid_dir: /data/guangchen_li/datasets/taobao/tb_v8/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/taobao/tb_v8/test.pkl
+    data_specs:
+      num_event_types: 20
+      pad_token_id: 20
+      padding_side: right
+      truncation_side: right
+  taxi:
+    data_format: pkl
+    train_dir:  /data/guangchen_li/datasets/taxi/train.pkl  # ./data/taxi/train.json
+    valid_dir:  /data/guangchen_li/datasets/taxi/dev.pkl # ./data/taxi/dev.json
+    test_dir:  /data/guangchen_li/datasets/taxi/test.pkl # ./data/taxi/test.json
+    data_specs:
+      num_event_types: 10
+      pad_token_id: 10
+      padding_side: right  
+  conttime:
+    data_format: pkl
+    train_dir:  /data/guangchen_li/datasets/data_conttime/train.pkl
+    valid_dir:  /data/guangchen_li/datasets/data_conttime/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/data_conttime/test.pkl
+    data_specs:
+      num_event_types: 5
+      pad_token_id: 5
+      padding_side: right
+      truncation_side: right
+THP_train:
+  base_config:
+    stage: train
+    backend: torch
+    dataset_id: amazon      
+    runner_id: std_tpp
+    model_id: THP
+    base_dir: /home/guangchen_li/dev/Easy_TPP/results/checkpoints/
+  trainer_config:
+    batch_size: 10
+    max_epoch: 20
+    shuffle: True
+    optimizer: adam
+    learning_rate: 1.e-3
+    valid_freq: 1
+    use_tfb: False
+    metrics: ['acc', 'rmse']
+    seed: 1234
+    gpu: 5
+  model_config:
+    hidden_size: 64
+    time_emb_size: 64
+    num_layers: 4
+    num_heads: 4
+    mc_num_sample_per_step: 20
+    loss_integral_num_sample_per_step: 20
+    w_mle: 1
+    w_dis: 1
+    use_ln: True
+    thinning:
+      num_seq: 10
+      num_sample: 1
+      num_exp: 500
+      look_ahead_time: 10
+      patience_counter: 5
+      over_sample_rate: 5
+      num_samples_boundary: 5
+      dtime_max: 5
+      num_step_gen: 1
