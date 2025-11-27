@@ -1,0 +1,12 @@
+[Info] Model: MLE MLE
+[Info] main parameters: w_mle-1.0; w_dis-1.0; w_cl1-0.0; w_cl2-0.0; superpose-False; num_neg-0
+[Info] all parameters: Namespace(data_folder='/data/guangchen_li/datasets/amazon', epoch=20, batch_size=4, d_model=64, d_rnn=256, d_inner_hid=128, d_k=16, d_v=16, n_head=4, n_layers=4, dropout=0.1, lr=0.001, smooth=0, log='/home/guangchen_li/dev/HCL_TPP/logs/log.txt', seed=123456, w_mle=1.0, w_dis=1.0, w_cl1=0.0, w_cl2=0.0, num_neg=0, ratio_remove=0.2, superpose=False, model='MLE', save_label='MLE', device=device(type='cuda'))
+8, -0.22130,  0.35555,  3.08467
+[Info] Model: MLE MLE
+[Info] main parameters: w_mle-1.0; w_dis-1.0; w_cl1-0.0; w_cl2-0.0; superpose-False; num_neg-0
+[Info] all parameters: Namespace(data_folder='/data/guangchen_li/datasets/amazon', epoch=20, batch_size=4, d_model=64, d_rnn=256, d_inner_hid=128, d_k=16, d_v=16, n_head=4, n_layers=4, dropout=0.1, lr=0.001, smooth=0, log='/home/guangchen_li/dev/HCL_TPP/logs/log.txt', seed=123456, w_mle=1.0, w_dis=1.0, w_cl1=0.0, w_cl2=0.0, num_neg=0, ratio_remove=0.2, superpose=False, model='MLE', save_label='MLE', device=device(type='cuda'))
+11, -0.21993,  0.35405,  3.08219
+[Info] Model: MLE MLE
+[Info] main parameters: w_mle-1.0; w_dis-1.0; w_cl1-0.0; w_cl2-0.0; superpose-False; num_neg-0
+[Info] all parameters: Namespace(data_folder='/data/guangchen_li/datasets/amazon', epoch=20, batch_size=4, d_model=64, d_rnn=256, d_inner_hid=128, d_k=16, d_v=16, n_head=4, n_layers=4, dropout=0.1, lr=0.001, smooth=0, log='/home/guangchen_li/dev/HCL_TPP/logs/log.txt', seed=123456, w_mle=1.0, w_dis=1.0, w_cl1=0.0, w_cl2=0.0, num_neg=0, ratio_remove=0.2, superpose=False, model='MLE', save_label='MLE', device=device(type='cuda'))
+12, -0.22060,  0.35557,  3.08347

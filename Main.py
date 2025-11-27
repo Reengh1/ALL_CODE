@@ -13,6 +13,7 @@ from preprocess.Dataset import get_dataloader
 from transformer.Models import Transformer
 from tqdm import tqdm
 
+import swanlab
 
 def prepare_dataloader(opt):
     """ Load data and prepare dataloader. """
@@ -139,14 +140,30 @@ def train(model, training_data, validation_data, optimizer, scheduler, pred_loss
               'accuracy: {type: 8.5f}, RMSE: {rmse: 8.5f}, '
               'elapse: {elapse:3.3f} min'
               .format(ll=train_event, type=train_type, rmse=train_time, elapse=(time.time() - start) / 60))
-
+        try:
+            import swanlab
+            swanlab.log({
+                "train/loglike": float(train_event),
+                "train/acc": float(train_type),
+                "train/rmse": float(train_time),
+            }, step=epoch)
+        except Exception as e:
+            print(f"[SwanLab] test log failed: {e}")
         start = time.time()
         valid_event, valid_type, valid_time = eval_epoch(model, validation_data, pred_loss_func, opt)
         print('  - (Testing)     loglikelihood: {ll: 8.5f}, '
               'accuracy: {type: 8.5f}, RMSE: {rmse: 8.5f}, '
               'elapse: {elapse:3.3f} min'
               .format(ll=valid_event, type=valid_type, rmse=valid_time, elapse=(time.time() - start) / 60))
-
+        try:
+            import swanlab
+            swanlab.log({
+                "valid/loglike": float(valid_event),
+                "valid/acc": float(valid_type),
+                "valid/rmse": float(valid_time),
+            }, step=epoch)
+        except Exception as e:
+            print(f"[SwanLab] test log failed: {e}")
         valid_event_losses += [valid_event]
         valid_pred_losses += [valid_type]
         valid_rmse += [valid_time]
@@ -188,6 +205,17 @@ def main():
     parser.add_argument('-log', type=str, default='log.txt')
 
     opt = parser.parse_args()
+
+    swanlab.init(
+    project="THP",
+    experiment_name="THP Source Code",
+    config={
+        "model": "MLE",
+        "dataset": "Taobao",
+        "batch_size": 4,
+        "lr": 1e-3,
+    }
+    )
 
     # default device is CUDA
     opt.device = torch.device('cuda')

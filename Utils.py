@@ -12,7 +12,27 @@ def softplus(x, beta):
     temp[temp > 20] = 20
     return 1.0 / beta * torch.log(1 + torch.exp(temp))
 
+class ScaledSoftplus(nn.Module):
+    '''
+    Use different beta for mark-specific intensities
+    '''
+    def __init__(self, num_marks, threshold=20.):
+        super(ScaledSoftplus, self).__init__()
+        self.threshold = threshold
+        self.log_beta = nn.Parameter(torch.zeros(num_marks), requires_grad=True)  # [num_marks]
 
+    def forward(self, x):
+        '''
+        :param x: [..., num_marks]
+        '''
+        beta = self.log_beta.exp()
+        beta = beta.to(x.device)
+        beta_x = beta * x
+        return torch.where(
+            beta_x <= self.threshold,
+            torch.log1p(beta_x.clamp(max=math.log(1e5)).exp()) / beta,
+            x,  # if above threshold, then the transform is effectively linear
+        )
 def compute_event(event, non_pad_mask):
     """ Log-likelihood of events. """
 
@@ -28,9 +48,10 @@ def compute_integral_biased(all_lambda, time, non_pad_mask):
     """ Log-likelihood of non-events, using linear interpolation. """
 
     diff_time = (time[:, 1:] - time[:, :-1]) * non_pad_mask[:, 1:]
-    diff_lambda = (all_lambda[:, 1:] + all_lambda[:, :-1]) * non_pad_mask[:, 1:]
+    all_lambda = torch.sum(all_lambda, dim=2)
+    diff_lambda = (all_lambda[:, 1:] + all_lambda[:, :-1]) 
 
-    biased_integral = diff_lambda * diff_time
+    biased_integral = diff_lambda * diff_time[:, 1:]
     result = 0.5 * biased_integral
     return result
 
@@ -57,6 +78,8 @@ def compute_integral_unbiased(model, data, time, non_pad_mask, type_mask):
 
 def log_likelihood(model, data, time, types):
     """ Log-likelihood of sequence. """
+    scaled_softplus = ScaledSoftplus(model.num_types)
+
 
     non_pad_mask = get_non_pad_mask(types).squeeze(2)
 
@@ -65,16 +88,25 @@ def log_likelihood(model, data, time, types):
         type_mask[:, :, i] = (types == i + 1).bool().to(data.device)
 
     all_hid = model.linear(data)
-    all_lambda = softplus(all_hid, model.beta)
-    type_lambda = torch.sum(all_lambda * type_mask, dim=2)
+
+
+
+    diff_time = (time[:, 1:] - time[:, :-1]) * non_pad_mask[:, 1:]
+    #print(all_hid[:, :-1, :].shape, model.base.shape, diff_time.unsqueeze(-1).shape)
+    all_hid = all_hid[:, :-1, :]+ model.base+ model.decay*diff_time.unsqueeze(-1)
+    #all_lambda = softplus(all_hid, model.beta)
+    all_lambda = scaled_softplus(all_hid)
+    type_lambda = torch.sum(all_lambda * type_mask[:, 1:, :], dim=2)
 
     # event log-likelihood
-    event_ll = compute_event(type_lambda, non_pad_mask)
+    event_ll = compute_event(type_lambda, non_pad_mask[:, 1:])
     event_ll = torch.sum(event_ll, dim=-1)
 
     # non-event log-likelihood, either numerical integration or MC integration
     # non_event_ll = compute_integral_biased(type_lambda, time, non_pad_mask)
-    non_event_ll = compute_integral_unbiased(model, data, time, non_pad_mask, type_mask)
+    #non_event_ll = compute_integral_unbiased(model, data, time, non_pad_mask, type_mask)
+    #print(all_lambda.shape, time[:,1:].shape, non_pad_mask[:, 1:].shape)
+    non_event_ll = compute_integral_biased(all_lambda* type_mask[:, 1:, :], time, non_pad_mask)
     non_event_ll = torch.sum(non_event_ll, dim=-1)
 
     return event_ll, non_event_ll

@@ -156,12 +156,13 @@ class Transformer(nn.Module):
 
         # parameter for the weight of time difference
         self.alpha = nn.Parameter(torch.tensor(-0.1))
+        self.decay = nn.Parameter(torch.empty([1,1, self.num_types]))
 
         # parameter for the softplus function
         self.beta = nn.Parameter(torch.tensor(1.0))
-
+        self.base = nn.Parameter(torch.empty([1, 1, self.num_types]))
         # OPTIONAL recurrent layer, this sometimes helps
-        self.rnn = RNN_layers(d_model, d_rnn)
+        #self.rnn = RNN_layers(d_model, d_rnn)
 
         # prediction of next time stamp
         self.time_predictor = Predictor(d_model, 1)
@@ -183,7 +184,8 @@ class Transformer(nn.Module):
         non_pad_mask = get_non_pad_mask(event_type)
 
         enc_output = self.encoder(event_type, event_time, non_pad_mask)
-        enc_output = self.rnn(enc_output, non_pad_mask)
+        #No RNN
+        #enc_output = self.rnn(enc_output, non_pad_mask)
 
         time_prediction = self.time_predictor(enc_output, non_pad_mask)
 
