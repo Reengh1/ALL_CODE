@@ -5,6 +5,7 @@ from easy_tpp.utils import RunnerPhase, logger, MetricsHelper, MetricsTracker, c
 from easy_tpp.utils.const import Backend
 import numpy as np
 import math
+from tqdm import tqdm
 @Runner.register(name='std_tpp')
 class TPPRunner(Runner):
     """Standard TPP runner
@@ -89,7 +90,7 @@ class TPPRunner(Runner):
             valid_loader (EasyTPP.DataLoader): data loader for the valid set.
         """
         test_loader = kwargs.get('test_loader')
-        for i in range(self.runner_config.trainer_config.max_epoch):
+        for i in range(self.runner_config.trainer_config.max_epoch):     
             train_metrics = self.run_one_epoch(train_loader, RunnerPhase.TRAIN)
             try:
                 import swanlab
@@ -215,8 +216,8 @@ class TPPRunner(Runner):
         pad_index = self.runner_config.data_config.data_specs.pad_token_id
         metrics_dict = OrderedDict()
         if phase in [RunnerPhase.TRAIN, RunnerPhase.VALIDATE]:
-            for batch in data_loader:
-                log_loss, pred_loss, se, pred_num_event, batch_num_pred, num_event = self.model_wrapper.run_batch_hcl(batch, phase=phase)
+            for batch in tqdm(data_loader):
+                log_loss, pred_loss, se, pred_num_event, batch_num_pred, num_event = self.model_wrapper.run_batch_hcl_sahp(batch, phase=phase)
                 total_log_loss += -log_loss.item()
                 total_num_event += num_event
                 total_event_rate += pred_num_event.item()

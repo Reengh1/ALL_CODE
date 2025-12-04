@@ -177,6 +177,7 @@ class THP(TorchBaseModel):
 
         return intensity_states
 
+
     def compute_intensities_at_sample_times(self,
                                             time_seqs,
                                             time_delta_seqs,

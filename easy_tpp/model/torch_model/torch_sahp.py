@@ -4,7 +4,7 @@ import torch.nn as nn
 from easy_tpp.model.torch_model.torch_baselayer import EncoderLayer, MultiHeadAttention, \
     TimeShiftedPositionalEncoding, ScaledSoftplus
 from easy_tpp.model.torch_model.torch_basemodel import TorchBaseModel
-
+from easy_tpp.model.torch_model.utlis import LinearPredictor
 
 class SAHP(TorchBaseModel):
     """Torch implementation of Self-Attentive Hawkes Process, ICML 2020.
@@ -37,6 +37,9 @@ class SAHP(TorchBaseModel):
         # convert hidden vectors into a scalar
         self.layer_intensity_hidden = nn.Linear(self.d_model, self.num_event_types)
         self.softplus = ScaledSoftplus(self.num_event_types)  # learnable mark-specific beta
+        # Predictor
+        self.type_predictor = LinearPredictor(self.d_model, self.num_event_types)
+        self.time_predictor = LinearPredictor(self.d_model, 1)
 
         self.stack_layers = nn.ModuleList(
             [EncoderLayer(
@@ -85,7 +88,7 @@ class SAHP(TorchBaseModel):
         states = mu + (eta - mu) * torch.exp(-gamma * duration_t)
         return states
 
-    def forward(self, time_seqs, time_delta_seqs, event_seqs, attention_mask):
+    def forward(self, time_seqs, time_delta_seqs, event_seqs, attention_mask, require_attn = False):
         """Call the model
 
         Args:
@@ -97,19 +100,37 @@ class SAHP(TorchBaseModel):
         Returns:
             tensor: hidden states at event times.
         """
+        
         type_embedding = self.layer_type_emb(event_seqs)
         position_embedding = self.layer_position_emb(time_seqs, time_delta_seqs)
-
         enc_output = type_embedding + position_embedding
+        n=0
+        enc_att = None
 
         for enc_layer in self.stack_layers:
-            enc_output = enc_layer(
-                enc_output,
-                mask=attention_mask)
+            #enc_output = enc_layer(
+            #    enc_output,
+            #    mask=attention_mask)
+            if n < self.n_layers - 1:
+                enc_output, _ = enc_layer(
+                    enc_output,
+                    mask=attention_mask,
+                    attn_weight=True)
+            else:
+                enc_output, enc_att = enc_layer(
+                    enc_output,
+                    mask=attention_mask,
+                    attn_weight=True)
+                enc_att = torch.sum(enc_att, dim=1)
+            n+=1
             if self.use_norm:
                 enc_output = self.norm(enc_output)
         # [batch_size, seq_len, hidden_dim]
-        return enc_output
+        if require_attn:
+            return enc_output, enc_att
+        else:
+            return enc_output
+
 
     def loglike_loss(self, batch):
         """Compute the log-likelihood loss.
@@ -121,12 +142,12 @@ class SAHP(TorchBaseModel):
             list: loglike loss, num events.
         """
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
-
-        enc_out = self.forward(time_seqs[:, :-1], time_delta_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1])
+        #print(type_seqs)
+        enc_out, enc_att = self.forward(time_seqs[:, :-1], time_delta_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1], require_attn=True)
 
         cell_t = self.state_decay(encode_state=enc_out,
                                   duration_t=time_delta_seqs[:, 1:, None])
-
+        #print(enc_att.shape, enc_out.shape, cell_t.shape, self.d_model)
         # [batch_size, seq_len, num_event_types]
         lambda_at_event = self.softplus(cell_t)
 
@@ -147,9 +168,13 @@ class SAHP(TorchBaseModel):
                                                                         seq_mask=batch_non_pad_mask[:, 1:],
                                                                         type_seq=type_seqs[:, 1:])
 
+
+
         # compute loss to minimize
         loss = - (event_ll - non_event_ll).sum()
-        return loss, num_events
+        time_prediction = self.time_predictor(enc_out,  batch_non_pad_mask[:, 1:].unsqueeze(-1))
+        type_prediction = self.type_predictor(enc_out,  batch_non_pad_mask[:, 1:].unsqueeze(-1))
+        return lambda_at_event, enc_out, enc_att, loss, num_events, time_prediction, type_prediction
 
     def compute_states_at_sample_times(self,
                                        encode_state,

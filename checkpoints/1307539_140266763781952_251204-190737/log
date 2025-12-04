@@ -1,0 +1,10 @@
+2025-12-04 19:07:37,160 - base_runner.py[pid:1307539;line:176:save_log] - INFO: Save the log to ./checkpoints/1307539_140266763781952_251204-190737/log
+2025-12-04 19:07:38,392 - tpp_runner.py[pid:1307539;line:61:_init_model] - INFO: Num of model parameters 5236
+2025-12-04 19:07:38,627 - base_runner.py[pid:1307539;line:98:train] - INFO: Data 'taxi' loaded...
+2025-12-04 19:07:38,628 - base_runner.py[pid:1307539;line:103:train] - INFO: Start AttNHP training...
+2025-12-04 19:07:48,401 - tpp_runner.py[pid:1307539;line:106:_train_model] - INFO: [ Epoch 0 (train) ]: train loglike is -1.9494642164768898, num_events is 50454, acc is 0.13822491774685852, rmse is 4.7406742884008555
+2025-12-04 19:07:49,664 - tpp_runner.py[pid:1307539;line:117:_train_model] - INFO: [ Epoch 0 (valid) ]:  valid loglike is -1.9058110619968074, num_events is 7204, acc is 0.2683231538034425, rmse is 4.661217498705543
+2025-12-04 19:07:52,174 - tpp_runner.py[pid:1307539;line:141:_train_model] - INFO: [ Epoch 0 (test) ]: test loglike is -1.8984671625780167, num_events is 14420, acc is 0.26685159500693484, rmse is 4.643402552182592
+2025-12-04 19:07:52,175 - tpp_runner.py[pid:1307539;line:143:_train_model] - CRITICAL: current best loglike on valid set is -1.9058 (updated at epoch-0), best updated at this epoch
+2025-12-04 19:08:01,163 - tpp_runner.py[pid:1307539;line:106:_train_model] - INFO: [ Epoch 1 (train) ]: train loglike is -1.8987025929559598, num_events is 50454, acc is 0.3617156221508701, rmse is 4.71159047561711
+2025-12-04 19:08:02,433 - tpp_runner.py[pid:1307539;line:117:_train_model] - INFO: [ Epoch 1 (valid) ]:  valid loglike is -1.8489271097220294, num_events is 7204, acc is 0.4339255968906163, rmse is 4.63239004336651

@@ -5,13 +5,14 @@ from torch import nn
 
 from easy_tpp.model.torch_model.torch_baselayer import EncoderLayer, MultiHeadAttention, ScaledSoftplus
 from easy_tpp.model.torch_model.torch_basemodel import TorchBaseModel
-
+from easy_tpp.model.torch_model.utlis import LinearPredictor
 
 class AttNHP(TorchBaseModel):
     """Torch implementation of Attentive Neural Hawkes Process, ICLR 2022.
     https://arxiv.org/abs/2201.00044.
     Source code: https://github.com/yangalan123/anhp-andtt/blob/master/anhp/model/xfmr_nhp_fast.py
     """
+
 
     def __init__(self, model_config):
         """Initialize the model
@@ -56,7 +57,8 @@ class AttNHP(TorchBaseModel):
         self.layer_event_emb = nn.Linear(self.d_model + self.d_time, self.d_model)
         self.layer_intensity = nn.Sequential(self.inten_linear, self.softplus)
         self.eps = torch.finfo(torch.float32).eps
-
+        self.type_predictor = LinearPredictor(self.d_model*self.n_head, self.num_event_types)
+        self.time_predictor = LinearPredictor(self.d_model*self.n_head, 1)
     def compute_temporal_embedding(self, time):
         """Compute the temporal embedding.
 
@@ -91,9 +93,11 @@ class AttNHP(TorchBaseModel):
         """
         cur_layers = []
         seq_len = event_emb.size(1)
+        attn_heads = [] 
         for head_i in range(self.n_head):
             # [batch_size, seq_len, hidden_size]
             cur_layer_ = init_cur_layer
+            attn_last_layer = None
             for layer_i in range(self.n_layers):
                 # each layer concats the temporal emb
                 # [batch_size, seq_len, hidden_size*2]
@@ -103,8 +107,8 @@ class AttNHP(TorchBaseModel):
                 _combined_input = torch.cat([event_emb, layer_], dim=1)
                 enc_layer = self.heads[head_i][layer_i]
                 # compute the output
-                enc_output = enc_layer(_combined_input, combined_mask)
-
+                enc_output, attn = enc_layer(_combined_input, combined_mask)
+                attn_last_layer = attn
                 # the layer output
                 # [batch_size, seq_len, hidden_size]
                 _cur_layer_ = enc_output[:, seq_len:, :]
@@ -117,9 +121,13 @@ class AttNHP(TorchBaseModel):
                 if self.use_norm:
                     cur_layer_ = self.norm(cur_layer_)
             cur_layers.append(cur_layer_)
+            attn_heads.append(attn_last_layer)
         cur_layer_ = torch.cat(cur_layers, dim=-1)
-
-        return cur_layer_
+        enc_att = torch.cat(attn_heads, dim=1)
+        enc_att = torch.sum(enc_att, dim=1)
+        enc_att = enc_att[:, seq_len:, :seq_len]
+        #print(enc_att.shape)
+        return cur_layer_, enc_att
 
     def seq_encoding(self, time_seqs, event_seqs):
         """Encode the sequence.
@@ -172,7 +180,7 @@ class AttNHP(TorchBaseModel):
         combined_mask = torch.cat([contextual_mask, combined_mask], dim=1)
         return combined_mask
 
-    def forward(self, time_seqs, event_seqs, attention_mask, sample_times=None):
+    def forward(self, time_seqs, event_seqs, attention_mask, sample_times=None, require_grad = False):
         """Call the model.
 
         Args:
@@ -192,9 +200,11 @@ class AttNHP(TorchBaseModel):
         else:
             sample_time_emb = self.compute_temporal_embedding(sample_times)
         combined_mask = self.make_combined_att_mask(attention_mask, layer_mask)
-        cur_layer_ = self.forward_pass(init_cur_layer, time_emb, sample_time_emb, event_emb, combined_mask)
-
-        return cur_layer_
+        cur_layer_, attn= self.forward_pass(init_cur_layer, time_emb, sample_time_emb, event_emb, combined_mask)
+        if require_grad == True:
+            return cur_layer_, attn
+        else:
+            return cur_layer_
 
     def loglike_loss(self, batch):
         """Compute the loglike loss.
@@ -203,13 +213,16 @@ class AttNHP(TorchBaseModel):
             batch (list): batch input.
 
         Returns:
+
             list: loglike loss, num events.
         """
         time_seqs, time_delta_seqs, type_seqs, batch_non_pad_mask, attention_mask = batch
         # 1. compute event-loglik
         # the prediction of last event has no label, so we proceed to the last but one
         # att mask => diag is False, not mask.
-        enc_out = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1], time_seqs[:, 1:])
+        enc_out, enc_att = self.forward(time_seqs[:, :-1], type_seqs[:, :-1], attention_mask[:, :-1, :-1], time_seqs[:, 1:], require_grad=True)
+        #print(enc_out.shape, self.d_model, self.d_time)
+
         # [batch_size, seq_len, num_event_types]
         lambda_at_event = self.layer_intensity(enc_out)
 
@@ -236,8 +249,13 @@ class AttNHP(TorchBaseModel):
                                                                         type_seq=type_seqs[:, 1:])
 
         # compute loss to minimize
+
         loss = - (event_ll - non_event_ll).sum()
-        return loss, num_events
+
+        time_prediction = self.time_predictor(enc_out,  batch_non_pad_mask[:, 1:].unsqueeze(-1))
+        type_prediction = self.type_predictor(enc_out,  batch_non_pad_mask[:, 1:].unsqueeze(-1))
+        #print(lambda_at_event.shape, enc_out.shape, enc_att.shape)
+        return lambda_at_event, enc_out, enc_att, loss, num_events, time_prediction, type_prediction
 
     def compute_states_at_sample_times(self,
                                        time_seqs,

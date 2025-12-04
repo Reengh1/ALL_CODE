@@ -1,5 +1,7 @@
 import torch
 import math
+import matplotlib.pyplot as plt
+
 def event2seq_embedding(enc_out, non_pad_mask):
     """
     enc_out: event embedding with size batch x seq_len x d_model
@@ -56,7 +58,8 @@ def sampling_positive_seqs(
     significance: torch.Tensor,      # [B, L]  越小越不重要
     pad_mask: torch.Tensor,
     pad_id,           # [B, L]  True=有效(非pad), False=pad
-    ratio_remove: float = 0.2,       # 、
+    ratio_remove: float = 0.2,
+    require_delta = False      
 ):
     assert label_type.shape == label_time.shape == significance.shape == pad_mask.shape
     B, L = label_type.shape
@@ -106,7 +109,13 @@ def sampling_positive_seqs(
         if k_keep < L:
             pos_type[b, k_keep:] = pad_type_val
             pos_time[b, k_keep:] = pad_time_val
-    return pos_type, pos_time, pos_mask
+    if require_delta:
+        delta_t = pos_time[:, 1:] - pos_time[:, :-1]
+        zero_pad = torch.zeros_like(pos_time[:, :1])
+        delta_t = torch.cat([zero_pad, delta_t], dim=1)
+        return pos_type, pos_time, pos_mask, delta_t
+    else:
+        return pos_type, pos_time, pos_mask
 @torch.no_grad()
 def sampling_negative_seqs_random(
     label_type: torch.Tensor,        # [B, L]
@@ -115,6 +124,7 @@ def sampling_negative_seqs_random(
     pad_id,          # [B, L]  True=有效(非pad), False=pad
     num_neg: int = 20,
     ratio_remove: float = 0.2,
+    require_delta = False   
 ):
 
     assert label_type.shape == label_time.shape == pad_mask.shape
@@ -166,7 +176,14 @@ def sampling_negative_seqs_random(
     neg_type = neg_type.permute(1, 0, 2).reshape(B * num_neg, L)
     neg_time = neg_time.permute(1, 0, 2).reshape(B * num_neg, L)
     neg_mask = neg_mask.permute(1, 0, 2).reshape(B * num_neg, L)
-    return neg_type, neg_time, neg_mask
+    if require_delta:
+        delta_t = neg_time[:, 1:] - neg_time[:, :-1]
+        zero_pad = torch.zeros_like(neg_time[:, :1])
+        delta_t = torch.cat([zero_pad, delta_t], dim=1)
+        return neg_type, neg_time, neg_mask, delta_t
+    else:
+        return neg_type, neg_time, neg_mask
+    
 def build_attn_mask_from_nonpad(non_pad_mask_bool: torch.Tensor) -> torch.Tensor:
     """
     non_pad_mask_bool: [B, L], True=非pad（有效），False=pad
@@ -179,6 +196,32 @@ def build_attn_mask_from_nonpad(non_pad_mask_bool: torch.Tensor) -> torch.Tensor
     # key padding：把 key 的 pad 列屏蔽
     key_pad = (~non_pad_mask_bool).unsqueeze(1).expand(-1, L, -1)
     return subsequent | key_pad
+
+def visualize_event_significance(significance: torch.Tensor,
+                                 seq_idx: int = 0,
+                                 title: str = None,
+                                 save_path: str = None):
+    sig = significance[seq_idx].detach().cpu().numpy()  # [L]
+
+    plt.figure(figsize=(7, 3))
+    plt.plot(sig, marker='o', linewidth=1.5)
+    plt.xlabel("Event index")
+    plt.ylabel("Significance")
+    plt.grid(True, linestyle='--', alpha=0.5)
+
+    if title is None:
+        plt.title(f"Event Significance (seq {seq_idx})")
+    else:
+        plt.title(title)
+
+    if save_path is not None:
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=200)
+        plt.close()
+        print(f"事件重要性图已保存到: {save_path}")
+    else:
+        plt.tight_layout()
+        plt.show()
 
 if __name__ == "__main__":
     event_time = torch.tensor([[ 2.6145,  3.3997,  4.1694,  4.8912,  5.6015,  6.3984,  7.1626,  7.9327,
