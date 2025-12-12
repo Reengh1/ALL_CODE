@@ -1,0 +1,6 @@
+2025-12-11 09:38:11,698 - base_runner.py[pid:2877081;line:176:save_log] - INFO: Save the log to ./checkpoints/2877081_140125350672192_251211-093805/log
+2025-12-11 09:38:12,943 - tpp_runner.py[pid:2877081;line:61:_init_model] - INFO: Num of model parameters 56256
+2025-12-11 09:38:13,199 - base_runner.py[pid:2877081;line:98:train] - INFO: Data 'reduced_amaozn_.1' loaded...
+2025-12-11 09:38:13,199 - base_runner.py[pid:2877081;line:103:train] - INFO: Start SAHP training...
+2025-12-11 09:38:21,194 - tpp_runner.py[pid:2877081;line:106:_train_model] - INFO: [ Epoch 0 (train) ]: train loglike is -5.380846422322448, num_events is 28412, acc is 0.29339715613121214, rmse is 10.325814035957766
+2025-12-11 09:38:27,502 - tpp_runner.py[pid:2877081;line:126:_train_model] - INFO: [ Epoch 0 (valid) ]:  valid loglike is -4.8839525831970425, num_events is 40073, acc is 0.2946871958675417, rmse is 5.652156210631715

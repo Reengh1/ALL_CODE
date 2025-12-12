@@ -55,9 +55,9 @@ def seq_contrastive_loss(seq_emb, pos_seq_emb, neg_seq_emb, scalar: float = 10):
 def sampling_positive_seqs(
     label_type: torch.Tensor,        # [B, L]
     label_time: torch.Tensor,        # [B, L]
-    significance: torch.Tensor,      # [B, L]  越小越不重要
+    significance: torch.Tensor,      # [B, L]  
     pad_mask: torch.Tensor,
-    pad_id,           # [B, L]  True=有效(非pad), False=pad
+    pad_id,           # [B, L]  
     ratio_remove: float = 0.2,
     require_delta = False      
 ):
@@ -69,8 +69,7 @@ def sampling_positive_seqs(
     pos_time = torch.empty_like(label_time)
     pos_mask = torch.zeros_like(pad_mask, dtype=torch.bool)
 
-    # 预取一个 pad 填充值：优先用原序列里已有的 pad 位；否则用 0
-    #（如果你的 pad id/time 有固定规范，也可以改成显式传入）
+
     def _pad_fill_vals(b):
         if (~pad_mask[b]).any():
             pad_type_val = label_type[b, ~pad_mask[b]][0]
@@ -110,9 +109,12 @@ def sampling_positive_seqs(
             pos_type[b, k_keep:] = pad_type_val
             pos_time[b, k_keep:] = pad_time_val
     if require_delta:
-        delta_t = pos_time[:, 1:] - pos_time[:, :-1]
-        zero_pad = torch.zeros_like(pos_time[:, :1])
-        delta_t = torch.cat([zero_pad, delta_t], dim=1)
+        temp = pos_time * pos_mask
+        raw_delta = temp[:, 1:] - temp[:, :-1]
+        valid_transition = pos_mask[:, 1:] * pos_mask[:, :-1]
+        raw_delta[valid_transition == 0] = 0.0
+        zero_pad = torch.zeros_like(temp[:, :1])
+        delta_t = torch.cat([zero_pad, raw_delta], dim=1)
         return pos_type, pos_time, pos_mask, delta_t
     else:
         return pos_type, pos_time, pos_mask
@@ -131,12 +133,10 @@ def sampling_negative_seqs_random(
     B, L = label_type.shape
     device = label_type.device
 
-    # 结果容器（先按 [num_neg, B, L] 组织，最后 reshape 到 [B*num_neg, L]）
     neg_type = torch.empty((num_neg, B, L), dtype=label_type.dtype, device=device)
     neg_time = torch.empty((num_neg, B, L), dtype=label_time.dtype, device=device)
     neg_mask = torch.zeros((num_neg, B, L), dtype=torch.bool, device=device)
 
-    # 取每条样本的 pad 填充值；若该样本没有 pad，则回退到 0
     def _pad_fill_vals(b):
         if (~pad_mask[b]).any():
             pad_type_val = label_type[b, ~pad_mask[b]][0]
@@ -158,7 +158,6 @@ def sampling_negative_seqs_random(
             keep_local = perm[:k_keep]
             keep_idx = valid_idx[keep_local]                                   # 全局下标 [k_keep]
 
-            # 保留的事件按时间升序排列并前移
             if k_keep > 0:
                 keep_times = label_time[b, keep_idx]
                 order = torch.argsort(keep_times, dim=0)                       # 升序
@@ -177,9 +176,13 @@ def sampling_negative_seqs_random(
     neg_time = neg_time.permute(1, 0, 2).reshape(B * num_neg, L)
     neg_mask = neg_mask.permute(1, 0, 2).reshape(B * num_neg, L)
     if require_delta:
-        delta_t = neg_time[:, 1:] - neg_time[:, :-1]
-        zero_pad = torch.zeros_like(neg_time[:, :1])
-        delta_t = torch.cat([zero_pad, delta_t], dim=1)
+        temp = neg_time * neg_mask
+        raw_delta = temp[:, 1:] - temp[:, :-1]
+        valid_transition = neg_mask[:, 1:] * neg_mask[:, :-1]
+
+        raw_delta[valid_transition == 0] = 0.0
+        zero_pad = torch.zeros_like(temp[:, :1])
+        delta_t = torch.cat([zero_pad, raw_delta], dim=1)
         return neg_type, neg_time, neg_mask, delta_t
     else:
         return neg_type, neg_time, neg_mask
@@ -265,4 +268,5 @@ if __name__ == "__main__":
          False, False, False, False, False, False, False, False, False, False,
          False, False, False, False, False, False, False, False, False, False,
          False, False, False, False, False, False, False, False, False, False]])
-    sampling_negative_seqs_random(event_type,event_time, non_mask, 16)
+    #sampling_negative_seqs_random(event_type,event_time, non_mask, 16)
+    print(build_attn_mask_from_nonpad(non_mask))

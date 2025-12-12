@@ -74,7 +74,8 @@ def make_positive_by_swaps(event_type: torch.Tensor,
                            mask: torch.Tensor,
                            frac_low: float = 0.4,
                            swap_factor: float = 0.5,
-                           max_pairs: int = 20000):
+                           max_pairs: int = 5,
+                           require_delta_t = False):
     B, L = event_type.shape
     pos_type = event_type.clone()
     pos_time = event_time.clone()  # 时间不动
@@ -88,7 +89,16 @@ def make_positive_by_swaps(event_type: torch.Tensor,
 
         choose_pairs = pairs[:swaps_pos]
         _apply_swaps_on_types(pos_type[b], choose_pairs)
-    return pos_type, pos_time
+    if require_delta_t:
+        temp = pos_time * mask
+        raw_delta = temp[:, 1:] - temp[:, :-1]
+        valid_transition = mask[:, 1:] * mask[:, :-1]
+        raw_delta[valid_transition == 0] = 0.0
+        zero_pad = torch.zeros_like(temp[:, :1])
+        delta_t = torch.cat([zero_pad, raw_delta], dim=1)
+        return pos_type, pos_time, delta_t
+    else:
+        return pos_type, pos_time
 
 
 @torch.no_grad()
@@ -98,7 +108,8 @@ def make_negatives_by_swaps(event_type: torch.Tensor,
                             mask: torch.Tensor,
                             num_neg: int = 20,
                             frac_top: float = 0.4,
-                            max_pairs: int = 20000):
+                            max_pairs: int = 20000,
+                            require_delta_t = False):
     assert num_neg >= 1
     B, L = event_type.shape
     neg_types = []
@@ -129,7 +140,17 @@ def make_negatives_by_swaps(event_type: torch.Tensor,
     neg_type = torch.stack(neg_types, dim=0)
     neg_time = torch.stack(neg_times, dim=0)
     neg_mask = torch.stack(masks, dim=0)
-    return neg_type, neg_time, neg_mask
+    if require_delta_t:
+        temp = neg_time * neg_mask
+        raw_delta = temp[:, 1:] - temp[:, :-1]
+        valid_transition = neg_mask[:, 1:] * neg_mask[:, :-1]
+
+        raw_delta[valid_transition == 0] = 0.0
+        zero_pad = torch.zeros_like(temp[:, :1])
+        delta_t = torch.cat([zero_pad, raw_delta], dim=1)
+        return neg_type, neg_time, neg_mask, delta_t
+    else:
+        return neg_type, neg_time, neg_mask
 
 if __name__ == "__main__":
     event_time = torch.tensor([[ 2.6145,  3.3997,  4.1694,  4.8912,  5.6015,  6.3984,  7.1626,  7.9327,
@@ -173,5 +194,7 @@ if __name__ == "__main__":
          False, False, False, False, False, False, False, False, False, False,
          False, False, False, False, False, False, False, False, False, False,
          False, False, False, False, False, False, False, False, False, False]])
-    make_negatives_by_swaps(event_type,event_time, significance, non_mask)
+    neg_type, neg_time, delta_t = make_positive_by_swaps(event_type,event_time, significance, non_mask, require_delta_t=
+    True)
+    print(neg_type, neg_time, non_mask,  delta_t)
     

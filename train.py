@@ -7,9 +7,9 @@ import swanlab
 def main(dataset:str):
     swanlab.init(
     project="THP",
-    experiment_name=f"SAHP",
+    experiment_name=f"TEST",
     config={
-        "model": "SAHP",
+        "model": "amazon.25_sahp_dcl",
         "dataset": dataset,
         "batch_size": 1,
         "lr": 1e-3,

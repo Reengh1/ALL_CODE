@@ -30,7 +30,48 @@ data:
       num_event_types: 16
       pad_token_id: 16
       padding_side: right
-      truncation_side: right  
+      truncation_side: right
+  reduced_amaozn_.5:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/train.pkl
+    valid_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/test.pkl
+    data_specs:
+      num_event_types: 16
+      pad_token_id: 16
+      padding_side: right
+      truncation_side: right
+  reduced_amaozn_.25:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.25/train.pkl
+    valid_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.25/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.25/test.pkl
+    data_specs:
+      num_event_types: 16
+      pad_token_id: 16
+      padding_side: right
+      truncation_side: right
+  reduced_amaozn_.1:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.1/train.pkl
+    valid_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.1/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.1/test.pkl
+    data_specs:
+      num_event_types: 16
+      pad_token_id: 16
+      padding_side: right
+      truncation_side: right
+  reduced_amaozn_.05:
+    data_format: pkl
+    train_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.05/train.pkl
+    valid_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.05/dev.pkl
+    test_dir:  /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.05/test.pkl
+    data_specs:
+      num_event_types: 16
+      pad_token_id: 16
+      padding_side: right
+      truncation_side: right
+    
   taobao_v3:
     data_format: pkl
     train_dir: /data/guangchen_li/datasets/taobao/taobao_v3/train.pkl
@@ -47,8 +88,8 @@ data:
     valid_dir: /data/guangchen_li/datasets/taobao/tb_v5/dev.pkl
     test_dir:  /data/guangchen_li/datasets/taobao/tb_v5/test.pkl
     data_specs:
-      num_event_types: 20
-      pad_token_id: 20
+      num_event_types: 9
+      pad_token_id: 9
       padding_side: right
       truncation_side: right  
   taobao_v8:
@@ -70,6 +111,33 @@ data:
       num_event_types: 10
       pad_token_id: 10
       padding_side: right  
+  reduced_taxi_.5:
+    data_format: pkl
+    train_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.5/train.pkl  # ./data/taxi/train.json
+    valid_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.5/dev.pkl # ./data/taxi/dev.json
+    test_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.5/test.pkl # ./data/taxi/test.json
+    data_specs:
+      num_event_types: 10
+      pad_token_id: 10
+      padding_side: right  
+  reduced_taxi_.25:
+    data_format: pkl
+    train_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.25/train.pkl  # ./data/taxi/train.json
+    valid_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.25/dev.pkl # ./data/taxi/dev.json
+    test_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.25/test.pkl # ./data/taxi/test.json
+    data_specs:
+      num_event_types: 10
+      pad_token_id: 10
+      padding_side: right  
+  reduced_taxi_.1:
+    data_format: pkl
+    train_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.1/train.pkl  # ./data/taxi/train.json
+    valid_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.1/dev.pkl # ./data/taxi/dev.json
+    test_dir:  /data/guangchen_li/datasets/taxi_reduced/taxi_reduced_.1/test.pkl # ./data/taxi/test.json
+    data_specs:
+      num_event_types: 10
+      pad_token_id: 10
+      padding_side: right 
   conttime:
     data_format: pkl
     train_dir:  /data/guangchen_li/datasets/data_conttime/train.pkl
@@ -84,13 +152,13 @@ THP_train:
   base_config:
     stage: train
     backend: torch
-    dataset_id: amazon      
+    dataset_id: reduced_taxi_.1
     runner_id: std_tpp
     model_id: THP
     base_dir: /home/guangchen_li/dev/Easy_TPP/results/checkpoints/
   trainer_config:
-    batch_size: 10
-    max_epoch: 20
+    batch_size: 4
+    max_epoch: 40
     shuffle: True
     optimizer: adam
     learning_rate: 1.e-3
@@ -123,13 +191,13 @@ AttNHP_train:
   base_config:
     stage: train
     backend: torch
-    dataset_id: taxi
+    dataset_id: reduced_taxi_.25
     runner_id: std_tpp
     model_id: AttNHP # model name
     base_dir: './checkpoints/'
   trainer_config:
-    batch_size: 256
-    max_epoch: 100
+    batch_size: 4
+    max_epoch: 50
     shuffle: False
     optimizer: adam
     learning_rate: 1.e-3
@@ -139,10 +207,10 @@ AttNHP_train:
     seed: 2019
     gpu: 3
   model_config:
-    hidden_size: 16
-    time_emb_size: 4
-    num_layers: 2
-    num_heads: 2
+    hidden_size: 64
+    time_emb_size: 64
+    num_layers: 4
+    num_heads: 4
     loss_integral_num_sample_per_step: 10
     use_ln: False
     thinning:
@@ -159,13 +227,13 @@ SAHP_train:
   base_config:
     stage: train
     backend: torch
-    dataset_id: taxi
+    dataset_id: reduced_amaozn_.25
     runner_id: std_tpp
     model_id: SAHP # model name
     base_dir: './checkpoints/'
   trainer_config:
-    batch_size: 256
-    max_epoch: 100
+    batch_size: 4
+    max_epoch: 20
     shuffle: False
     optimizer: adam
     learning_rate: 1.e-3
@@ -175,10 +243,10 @@ SAHP_train:
     seed: 2019
     gpu: 4
   model_config:
-    hidden_size: 32
-    time_emb_size: 16
-    num_layers: 2
-    num_heads: 2
+    hidden_size: 64
+    time_emb_size: 64
+    num_layers: 4
+    num_heads: 4
     loss_integral_num_sample_per_step: 20
     use_ln: False
     thinning:

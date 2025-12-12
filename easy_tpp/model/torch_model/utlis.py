@@ -7,10 +7,10 @@ import torch.nn.functional as func
 def type_loss(prediction, types, loss_func):
     """ Event prediction loss, cross entropy or label smoothing. """
     # convert [1,2,3] based types to [0,1,2]; also convert padding events to -1
-    truth = types[:, 1:] - 1
-    prediction = prediction[:, :-1, :]
-
+    # prediction [B, L-1, NUM_TYPES], types = [B, L-1]
+    truth = types
     pred_type = torch.max(prediction, dim=-1)[1]
+    #print(truth, pred_type)
     correct_num = torch.sum(pred_type == truth)
 
     # compute cross entropy loss
@@ -131,25 +131,6 @@ def get_subsequent_mask(seq):
         torch.ones((len_s, len_s), device=seq.device, dtype=torch.uint8), diagonal=1)
     subsequent_mask = subsequent_mask.unsqueeze(0).expand(sz_b, -1, -1)  # b x ls x ls
     return subsequent_mask
-
-def type_loss(prediction, types, loss_func):
-    """ Event prediction loss, cross entropy or label smoothing. """
-    # convert [1,2,3] based types to [0,1,2]; also convert padding events to -1
-    truth = types
-    prediction = prediction
-
-    pred_type = torch.max(prediction, dim=-1)[1]
-    #print(prediction, pred_type, truth)
-    correct_num = torch.sum(pred_type == truth)
-
-    # compute cross entropy loss
-    if isinstance(loss_func, LabelSmoothingLoss):
-        loss = loss_func(prediction, truth)
-    else:
-        loss = loss_func(prediction.transpose(1, 2), truth)
-
-    loss = torch.sum(loss)
-    return loss, correct_num
 
 class LabelSmoothingLoss(nn.Module):
     """

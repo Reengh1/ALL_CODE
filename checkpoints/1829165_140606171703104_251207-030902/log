@@ -1,0 +1,8 @@
+2025-12-07 03:09:09,379 - base_runner.py[pid:1829165;line:176:save_log] - INFO: Save the log to ./checkpoints/1829165_140606171703104_251207-030902/log
+2025-12-07 03:09:10,631 - tpp_runner.py[pid:1829165;line:61:_init_model] - INFO: Num of model parameters 56256
+2025-12-07 03:09:10,924 - base_runner.py[pid:1829165;line:98:train] - INFO: Data 'reduced_amaozn_.1' loaded...
+2025-12-07 03:09:10,925 - base_runner.py[pid:1829165;line:103:train] - INFO: Start SAHP training...
+2025-12-07 03:09:22,572 - tpp_runner.py[pid:1829165;line:106:_train_model] - INFO: [ Epoch 0 (train) ]: train loglike is -5.381163389669679, num_events is 28412, acc is 0.29170772912853726, rmse is 10.313988216461967
+2025-12-07 03:09:33,843 - tpp_runner.py[pid:1829165;line:125:_train_model] - INFO: [ Epoch 0 (valid) ]:  valid loglike is -4.88513071798265, num_events is 40073, acc is 0.29543582961096, rmse is 5.442486771179085
+2025-12-07 03:09:56,371 - tpp_runner.py[pid:1829165;line:149:_train_model] - INFO: [ Epoch 0 (test) ]: test loglike is -4.930699365795147, num_events is 82197, acc is 0.3092935265277322, rmse is 5.503229203267554
+2025-12-07 03:09:56,371 - tpp_runner.py[pid:1829165;line:151:_train_model] - CRITICAL: current best loglike on valid set is -4.8851 (updated at epoch-0), best updated at this epoch

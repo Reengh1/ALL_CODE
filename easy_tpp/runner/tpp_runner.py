@@ -97,8 +97,8 @@ class TPPRunner(Runner):
                 epoch = i  # or whatever your loop variable is
                 swanlab.log({
                     "train/loglike": float(train_metrics.get("loglike", 0.0)),
-                    "train/acc": float(test_metrics.get("acc", 0.0)),
-                    "train/rmse": float(test_metrics.get("rmse", 0.0)),
+                    "train/acc": float(train_metrics.get("acc", 0.0)),
+                    "train/rmse": float(train_metrics.get("rmse", 0.0)),
                 }, step=epoch)
             except Exception as e:
                 print(f"[SwanLab] train log failed: {e}")
@@ -110,7 +110,16 @@ class TPPRunner(Runner):
             # evaluate model
             if i % self.runner_config.trainer_config.valid_freq == 0:
                 valid_metrics = self.run_one_epoch(valid_loader, RunnerPhase.VALIDATE)
-
+                try:
+                        import swanlab
+                        swanlab.log({
+                            "valid/loglike": float(valid_metrics.get("loglike", 0.0)),
+                            "valid/acc": float(valid_metrics.get("acc", 0.0)),
+                            "valid/rmse": float(valid_metrics.get("rmse", 0.0)),
+                        }, step=epoch)
+                        print(valid_metrics.get("acc", 0.0))
+                except Exception as e:
+                        print(f"[SwanLab] test log failed: {e}")
                 self.model_wrapper.write_summary(i, valid_metrics, RunnerPhase.VALIDATE)
 
                 message = f"[ Epoch {i} (valid) ]:  valid " + MetricsHelper.metrics_dict_to_str(valid_metrics)
@@ -217,7 +226,7 @@ class TPPRunner(Runner):
         metrics_dict = OrderedDict()
         if phase in [RunnerPhase.TRAIN, RunnerPhase.VALIDATE]:
             for batch in tqdm(data_loader):
-                log_loss, pred_loss, se, pred_num_event, batch_num_pred, num_event = self.model_wrapper.run_batch_hcl_sahp(batch, phase=phase)
+                log_loss, pred_loss, se, pred_num_event, batch_num_pred, num_event = self.model_wrapper.run_batch_mdle(batch, phase=phase)
                 total_log_loss += -log_loss.item()
                 total_num_event += num_event
                 total_event_rate += pred_num_event.item()
@@ -228,6 +237,7 @@ class TPPRunner(Runner):
             rmse = math.sqrt(total_time_se / max(total_num_pred, 1))            
             metrics_dict.update({'loglike': avg_ll, 'num_events': total_num_event, 'acc':avg_acc, 'rmse':rmse})
             return metrics_dict
+       
         #else: metrics_dict
 """        else:
             for batch in data_loader:

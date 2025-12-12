@@ -1,0 +1,64 @@
+data_config:
+  train_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/train.pkl
+  valid_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/dev.pkl
+  test_dir: /data/guangchen_li/datasets/amazon_reduced/amazon_reduced_.5/test.pkl
+  data_format: pkl
+  data_specs:
+    num_event_types: 16
+    pad_token_id: 16
+    padding_side: right
+    truncation_side: right
+    padding_strategy: null
+    truncation_strategy: null
+    max_len: null
+base_config:
+  stage: train
+  backend: torch
+  dataset_id: reduced_amaozn_.5
+  runner_id: std_tpp
+  model_id: SAHP
+  base_dir: ./checkpoints/
+  specs:
+    log_folder: ./checkpoints/2878407_140470956967744_251211-094335
+    saved_model_dir: ./checkpoints/2878407_140470956967744_251211-094335/models/saved_model
+    saved_log_dir: ./checkpoints/2878407_140470956967744_251211-094335/log
+    output_config_dir: ./checkpoints/2878407_140470956967744_251211-094335/SAHP_train_output.yaml
+model_config:
+  rnn_type: LSTM
+  hidden_size: 64
+  time_emb_size: 64
+  num_layers: 4
+  sharing_param_layer: false
+  loss_integral_num_sample_per_step: 20
+  dropout_rate: 0.0
+  use_ln: false
+  thinning:
+    num_seq: 10
+    num_sample: 1
+    num_exp: 500
+    look_ahead_time: 10
+    patience_counter: 5
+    over_sample_rate: 5
+    num_samples_boundary: 5
+    dtime_max: 5
+    num_step_gen: 1
+  num_event_types_pad: 17
+  num_event_types: 16
+  event_pad_index: 16
+  model_id: SAHP
+  pretrained_model_dir: null
+  gpu: 4
+  model_specs: {}
+trainer_config:
+  seed: 2019
+  gpu: 4
+  batch_size: 4
+  max_epoch: 20
+  shuffle: false
+  optimizer: adam
+  learning_rate: 0.001
+  valid_freq: 1
+  use_tfb: false
+  metrics:
+  - acc
+  - rmse

@@ -12,11 +12,11 @@ def attention(query, key, value, mask=None, dropout=None):
         # small change here -- we use "1" for masked element
         scores = scores.masked_fill(mask > 0, -1e9)
     p_attn = torch.softmax(scores, dim=-1)
-    p_attn_ = F.softplus(scores)
+    #p_attn_ = F.softplus(scores)
     #print(p_attn)
     if dropout is not None:
         p_attn = dropout(p_attn)
-    return torch.matmul(p_attn, value), p_attn_
+    return torch.matmul(p_attn, value), p_attn
 
 
 
